@@ -148,8 +148,8 @@ def eligible_for_hardlink(
         print "Ignore date:", options.notimestamp
         print "Device:", st1[stat.ST_DEV], st2[stat.ST_DEV]
         if st1[stat.ST_NLINK] + st2[stat.ST_NLINK] > 65000:
-	  print "Too many hardlinks on this inode (more than 65000)"
-	  gStats.did_skip_beacuse_max_reached()
+            print "Too many hardlinks on this inode (more than 65000)"
+            gStats.did_skip_beacuse_max_reached()
     return result
 
 
@@ -173,20 +173,20 @@ def are_file_contents_equal(filename1, filename2, options):
             print "     to  : %s" % filename2
         buffer_size = 1024*1024
         while 1:
-	  # try added because the following triggers sometimes
-	  # a MemoryError
-	    try:
-	      buffer1 = file1.read(buffer_size)
-	      buffer2 = file2.read(buffer_size)
-	    except:
-	      print "Error while trying to compare files in are_file_contents_equal"
-	      print "Was attempting to open:"
-	      print "file1: %s" % filename1
-	      print "file2: %s" % filename2
-	      print "skipping comparison, i.e. no hardlink"
-	      result = False
-	      gStats.did_skip_beacuse_comparison_error()
-	      break
+            # try added because the following triggers sometimes
+            # a MemoryError
+            try:
+                buffer1 = file1.read(buffer_size)
+                buffer2 = file2.read(buffer_size)
+            except:
+                print "Error while trying to compare files in are_file_contents_equal"
+                print "Was attempting to open:"
+                print "file1: %s" % filename1
+                print "file2: %s" % filename2
+                print "skipping comparison, i.e. no hardlink"
+                result = False
+                gStats.did_skip_beacuse_comparison_error()
+                break
             if buffer1 != buffer2:
                 result = False
                 break
@@ -265,7 +265,7 @@ def hardlink_files(sourcefile, destfile, stat_info, options):
                 if options.dryrun:
                     print "Did NOT link.  Dry run"
                 size = stat_info[stat.ST_SIZE]
-                print "Linked: %s" % sourcefile
+                print "Linked: %s (already linked %s times)" % (sourcefile,stat_info[stat.ST_NLINK])
                 print"     to: %s, saved %s" % (destfile, size)
             result = True
     return result
@@ -308,7 +308,6 @@ def hardlink_identical_files(directories, filename, options):
         return
     if not stat_info:
         # We didn't get the file status info :(
-        if debug1 or options.verbose >= 3: print "Weird ! Unable to get stat info for: %s" % filename
         return
 
     # Is it a directory?
@@ -320,7 +319,7 @@ def hardlink_identical_files(directories, filename, options):
         # Create the hash for the file.
         file_hash = hash_value(stat_info[stat.ST_SIZE], stat_info[stat.ST_MTIME],
             options.notimestamp or options.contentonly)
-	if debug1 or options.verbose >= 3: print "Fast hash done for %s" % filename
+        if debug1 or options.verbose >= 3: print "Fast hash done for %s" % filename
         # Bump statistics count of regular files found.
         gStats.found_regular_file()
         if options.verbose >= 2:
@@ -342,7 +341,36 @@ def hardlink_identical_files(directories, filename, options):
                 for (temp_filename,temp_stat_info) in file_hashes[file_hash]:
                     if are_files_hardlinkable(work_file_info, (temp_filename, temp_stat_info),
                             options):
-                        hardlink_files(temp_filename, filename, temp_stat_info, options)
+                        # The destfile will be the less linked file
+                        if (stat_info[stat.ST_NLINK] > temp_stat_info[stat.ST_NLINK]):
+                            destfile = temp_filename
+                            used_stat_info = stat_info
+                            sourcefile = filename
+                            max_links = stat_info[stat.ST_NLINK]
+                            min_links = temp_stat_info[stat.ST_NLINK]
+                        else:
+                            destfile = filename
+                            used_stat_info = temp_stat_info
+                            sourcefile = temp_filename
+                            max_links = temp_stat_info[stat.ST_NLINK]
+                            min_links = stat_info[stat.ST_NLINK]
+                        if hardlink_files(sourcefile, destfile, used_stat_info, options):
+                            if options.verbose >= 3:
+                                print "source was: %s, with %s links" % (sourcefile,max_links)
+                                print"   dest was: %s, with %s links" % (destfile,min_links)
+                            # We need to refresh stats for both files
+                            try:
+                                new_stat_info = os.stat(sourcefile)
+                            except OSError:
+                                # Python 1.5.2 doesn't handle 2GB+ files well :(
+                                print "Unable to get stat info for: %s" % filename
+                                print "If running Python 1.5 this could be because the file is greater than 2 Gibibytes"
+                                return
+                            if not new_stat_info:
+                                # We didn't get the file status info :(
+                                return
+                            stat_info = new_stat_info
+                            file_hashes[file_hash][0] = (sourcefile,new_stat_info)
                         break
                 else:
                     # The file should NOT be hardlinked to any of the other

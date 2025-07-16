@@ -1,6 +1,6 @@
 # Better Hardlinkpy
 
-Better Hardlinkpy is a fork of Hardlinkpy by @JohnVillalovos
+Better Hardlinkpy is a fork of Hardlinkpy by [John Villalovos](https://github.com/JohnVillalovos).
 
 This python 3 script optimizes space by grouping identical files (i.e. duplicates) with hardlinks (one single inode for many duplicate files).
 
@@ -8,11 +8,11 @@ This python 3 script optimizes space by grouping identical files (i.e. duplicate
 
 hardlink.py is a tool to hardlink together identical files in order to save space. It is a complete rewrite and improvement over the original hardlink.c code (which was written by: Jakub Jelinek jakub@redhat.com). The purpose of the two is the same but they do it in vastly different ways. This code has only been tested on Linux and should work on other Unix variants. It may work on Windows, but it was never tested. This code is very useful for people who mirror FTP sites in that it can save a large amount of space when you have identical files on the system.
 
-@JohnVillalovos first wrote the code in C++ and then decided to port it to Python.
+[John Villalovos](https://github.com/JohnVillalovos) first wrote the code in C++ and then decided to port it to Python.
 
-Performance is orders of magnitude faster than hardlink.c due to a more efficient algorithm. Plus @JohnVillalovos thinks readability is much better too.
+Performance is orders of magnitude faster than hardlink.c due to a more efficient algorithm. Plus [John Villalovos](https://github.com/JohnVillalovos) thinks readability is much better too.
 
-The code was first imported from <https://code.google.com/p/hardlinkpy/>, but you can also find it on @JohnVillalovos repo: <https://github.com/JohnVillalovos/hardlinkpy> (updated for Python 3.6).
+The code was first imported from <https://code.google.com/p/hardlinkpy/>, but you can also find it on [John Villalovos](https://github.com/JohnVillalovos) repo: <https://github.com/JohnVillalovos/hardlinkpy> (updated for Python 3.6).
 
 ## This fork: Better Hardlinkpy
 
@@ -30,7 +30,7 @@ The original Hardlinkpy (on Google code) had several opened issues and several p
 
 ### Algorithm improvements: merges new hardlink to old hardlinks
 
-There was a difficult to explain issue with the original Hardlinkpy that was impeding compression efficiency, in particular when running several times the script on the same files.
+There was an issue (difficult to explain) with the original Hardlinkpy that was impeding compression efficiency, in particular when running several times the script on the same files.
 
 The **original Hardlinkpy** was not efficient enough. It was checking files one by one and then recording them in memory. Once it picked a duplicate with one already in memory, it was hardlinking the files two by two (after some verification to confirm that they were identical).
 
@@ -38,7 +38,7 @@ The **original Hardlinkpy** was not efficient enough. It was checking files one 
 
 *Consequences*:
 
--There were still existing duplicates (and space lost): several different inodes pointing to identical files, each one having two or more hardlinks to files.
+- There were still existing duplicates (and space lost): several different inodes pointing to identical files, each one having two or more hardlinks to files.
 - Running the script twice or more on the same files was not grouping the inodes, but just "rolling" the hardlinks between inodes. Thus, there was no compression optimization while running the script twice. Hence, since the script was not backtracking the hardlinks, it was not possible to group all the duplicates on the same inode.
 
 This fork, **Better Hardlinkpy** is more efficient. It is still not backtracking the links, but it improves the algorithm in order to group duplicates in the same inode, and enhances the grouping at each run of the script.
@@ -51,4 +51,4 @@ You can run the script several times; it will optimize the space grouping more a
 
 Better Hardlinkpy is GPL v2.
 
-Known authors are Jakub Jelinek jakub@redhat.com, @JohnVillalovos and @Beurt.
+Known authors are Jakub Jelinek jakub@redhat.com, [John Villalovos](https://github.com/JohnVillalovos) and @Beurt.
